@@ -1,6 +1,7 @@
 ---
 title: "Shiny Modules example for ggtda"
 output: html_notebook
+runtime: shiny
 ---
 
 Example shiny app to demonstrate shiny modules
@@ -45,6 +46,7 @@ server <- function(input, output, session){
   ## Create the persistence plot
   res <- callModule(linkedPersistence, "pers_plot", dgm, dgm_selection, dgm_vars)
   
+  ## Show the index of the selected feature
   output$text_out <- renderText({ res$selected_feature_idx() })
 }
 shinyApp(ui, server)
