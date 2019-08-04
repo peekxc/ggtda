@@ -29,7 +29,8 @@ ui <- fluidPage(
       dgm_var_UI(id = "var_pers")        ## parameters to tweak like e.g. noise threshold 
     ), 
     mainPanel(
-      linkedPersistenceOutput("pers_plot")
+      linkedPersistenceOutput("pers_plot"), 
+      verbatimTextOutput("text_out")
     )
   )
 )
@@ -43,6 +44,8 @@ server <- function(input, output, session){
   
   ## Create the persistence plot
   res <- callModule(linkedPersistence, "pers_plot", dgm, dgm_selection, dgm_vars)
+  
+  output$text_out <- renderText({ res$selected_feature_idx() })
 }
 shinyApp(ui, server)
 ```

@@ -16,8 +16,11 @@ dmg_select_ui <- function(id) {
   tagList(
     pt_selector, 
     conditionalPanel(
-      condition = "input.pers_pt == 'dgm'", 
-      selectInput(ns("dgm_pt"), label = "Orientation", choices = c(Flat="flat",Diagonal="diagonal",Landscape="landscape")), 
+      condition = "input.pers_pt == 'dgm'",
+      tagList(
+        selectInput(ns("dgm_pt"), label = "Orientation", choices = c(Flat="flat",Diagonal="diagonal",Landscape="landscape")), 
+        radioButtons(ns("dgm_show_frontier"), label = "Show frontier", choices = c("Yes", "No"), selected = "No")
+      ),
       ns = ns
     )
   )
@@ -32,7 +35,11 @@ dmg_select_ui <- function(id) {
 #' @export
 dgm_select <-  function(input, output, session) {
   return(
-    list(plot_type = reactive({ input$pers_pt }), dgm_pt = reactive({ input$dgm_pt }))
+    list(
+      plot_type = reactive({ input$pers_pt }), 
+      dgm_pt = reactive({ input$dgm_pt }), 
+      dgm_show_frontier = reactive({ input$dgm_show_frontier })
+    )
   )
 }
 
@@ -137,9 +144,20 @@ linkedPersistence <- function(input, output, session, dgm, dgm_selection, dgm_va
     
     ## Switch up the type of geom/stat based on selection
     if (dgm_selection$plot_type() == "barcode"){
-      base_plot + geom_barcode()
+      return(base_plot + geom_barcode() + labs(x = "Diameter", y = "Homological features"))
     } else if (dgm_selection$plot_type() == "dgm"){
-      base_plot + stat_persistence(diagram = dgm_selection$dgm_pt())
+      diagram_format <- dgm_selection$dgm_pt()
+      show_frontier <- (dgm_selection$dgm_show_frontier() == "Yes")
+      new_plot <- base_plot + stat_persistence(diagram = diagram_format)
+      if (diagram_format == "diagonal" || diagram_format == "landscape"){
+        new_plot <- new_plot
+      } else if (diagram_format == "flat"){
+        new_plot <- new_plot + geom_abline( intercept = 0, slope = 1, color = "darkgoldenrod", linetype = "dashed" )
+      } 
+      if (show_frontier){
+        new_plot <- new_plot + stat_frontier(diagram = diagram_format)
+      }
+      return(new_plot)
     } else { stop("Unkown plot type selection.") }
   })
   
