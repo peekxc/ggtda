@@ -1,0 +1,106 @@
+---
+title: "Shiny Modules example for ggtda"
+output: html_notebook
+---
+
+Example shiny app to demonstrate shiny modules
+
+```{r}
+## Example from TDAstats calculate_homology function help page
+library(TDAstats)
+data("circle2d") # unit circle (Betti-1 number = 1)
+circ.phom <- as.data.frame(calculate_homology(circle2d))
+circ.phom$dimension <- as.factor(circ.phom$dimension)
+```
+
+```{r}
+library(shiny)
+library(ggplot2)
+library(ggtda)
+
+## assume persistence data is named 'dgm' 
+dgm <- circ.phom
+
+ui <- fluidPage(
+  titlePanel("Persistence shiny plot demo"), 
+  sidebarLayout(
+    sidebarPanel(
+      dmg_select_ui(id = "select_pers"), ## selects the type of persistence plot to show
+      dgm_var_UI(id = "var_pers")        ## parameters to tweak like e.g. noise threshold 
+    ), 
+    mainPanel(
+      linkedPersistenceOutput("pers_plot")
+    )
+  )
+)
+
+server <- function(input, output, session){
+  ## Get the type of plot to interact with  
+  dgm_selection <- callModule(dgm_select, "select_pers")
+  
+  ## Get the selected parameters associated with the UI elements
+  dgm_vars <- callModule(dgm_var, "var_pers", dgm)
+  
+  ## Create the persistence plot
+  res <- callModule(linkedPersistence, "pers_plot", dgm, dgm_selection, dgm_vars)
+}
+shinyApp(ui, server)
+```
+
+
+
+```{r}
+  # ## Highlight the clicked bar
+  # observeEvent(input$bar_click, {
+  #   req(input$bar_click)
+  #   y_idx <- round(input$bar_click$y)
+  #   c_eps <- mm$current_eps()
+  #   x_within_bar <- (bar$birth[y_idx] <= input$bar_click$x) && (input$bar_click$x <= bar$death[y_idx])
+  #   eps_within_bar <- (bar$birth[y_idx] <= c_eps && c_eps <= bar$death[y_idx])
+  #   
+  #   ## Only select a barcode if clicked within the barcodes range and the filtration state allows it
+  #   if (x_within_bar && eps_within_bar){
+  #     selected_bar <- cbind(barcodes, selected=as.character(ifelse(seq(length(bar$id)) == y_idx, 1L, 0L)))
+  #     aes_map <- ggplot2::aes(start = appear, end = disappear, color = selected, group=id_)
+  #     selected_plot <- ggplot2::ggplot(selected_bar, aes_map) +
+  #       ggtda::geom_barcode(size=1.5) +
+  #       ggtda::theme_tda() + scale_color_manual(values = c("0"="gray", "1"="red")) 
+  #     output$barcode_plot <- renderPlot({ 
+  #       selected_plot + 
+  #       ggplot2::geom_vline(xintercept = mm$current_eps()) + 
+  #       ggplot2::xlab( latex2exp::TeX("$\\epsilon$")) 
+  #     })
+  #   } else {
+  #     output$barcode_plot <- renderPlot({ 
+  #       base_plot + 
+  #       ggplot2::geom_vline(xintercept = mm$current_eps()) + 
+  #       ggplot2::xlab( latex2exp::TeX("$\\epsilon$"))
+  #     }) 
+  #   }
+  # })
+  # 
+  # ## Attached observer to change node color
+  # observeEvent(input$bar_click, {
+  #   req(input$bar_click$y)
+  #   y_idx <- round(input$bar_click$y)
+  #   c_eps <- mm$current_eps()
+  #   x_within_bar <- (bar$birth[y_idx] <= input$bar_click$x) && (input$bar_click$x <= bar$death[y_idx])
+  #   eps_within_bar <- (bar$birth[y_idx] <= c_eps && c_eps <= bar$death[y_idx])
+  #   
+  #   if (x_within_bar && eps_within_bar){
+  #     c_sc <- mm$filtration()(eps = mm$current_eps())
+  #     if (bar$dim[y_idx] == 0){
+  #       vertex_id <- c_sc$vertices[ bar$id[y_idx]+1L ]
+  #       cc <- c_sc$connected_components
+  #       cc_id <- cc[match(vertex_id, c_sc$vertices)]
+  #       selected_vertices <- c_sc$vertices[cc == cc_id]
+  #     } else if (bar$dim[y_idx] == 1){
+  #       selected_vertices <- bar$generators[[as.character(bar$id[y_idx])]]
+  #     }
+  #     unselected_vertices <- setdiff(c_sc$vertices, selected_vertices)
+  #     setNodeStyle(id = pp_shiny$pp_vis(), node_ids = unselected_vertices, color = rgb(0.6, 0.6, 0.6))
+  #     setNodeStyle(id = pp_shiny$pp_vis(), node_ids = selected_vertices, color = rgb(1, 0, 0))
+  #   }
+  # })
+```
+
